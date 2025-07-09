@@ -1,3 +1,5 @@
+import bcrypt from "bcrypt";
+import CryptoJS from "crypto-js";
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(
@@ -17,6 +19,7 @@ const UserSchema = new mongoose.Schema(
         validator: function (value) {
           return /[^@ \t\r\n]+@[^@ \t\r\n]+\.[^@ \t\r\n]+/.test(value);
         },
+        message: "Invalid email format",
       },
     },
     password: {
@@ -29,12 +32,19 @@ const UserSchema = new mongoose.Schema(
             value
           );
         },
+        message:
+          "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
       },
     },
     phone: {
       type: String,
       unique: [true, "Phone number already exists"],
       trim: true,
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: [true, "Gender is required"],
     },
     age: {
       type: Number,
@@ -45,27 +55,44 @@ const UserSchema = new mongoose.Schema(
       trim: true,
       minlength: 6,
       maxlength: 6,
-      match: [/^\d{6}$/, "OTP must be a 6-digit number"],
+      default: null,
     },
     role: {
       type: String,
+      enum: ["user", "admin"],
+      default: "user",
     },
     profileImg: {
       type: String,
-      isdeleted: {
-        type: Boolean,
-        default: false,
-      },
+      default: "",
     },
     isEmailVerified: {
       type: Boolean,
       default: false,
+    },
+    bio: {
+      type: String,
+      default: "",
     },
   },
   {
     timestamps: true,
   }
 );
+
+UserSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  if (this.isModified("phone")) {
+    this.phone = CryptoJS.AES.encrypt(
+      this.phone,
+      process.env.ENCRYPTION_KEY
+    ).toString();
+  }
+
+  next();
+});
 
 const User = mongoose.model("User", UserSchema);
 
