@@ -14,6 +14,7 @@ export const authToken = async (req, res, next) => {
     }
 
     req.user = decoded;
+
     next();
   } catch (error) {
     res.status(401).json({
@@ -24,22 +25,20 @@ export const authToken = async (req, res, next) => {
 };
 
 export const userMiddleware = (...allowedRoles) => {
-  return (req, res, next) => {
-    const role = req.user.role;
+  try {
+    return (req, res, next) => {
+      const role = req.user.role;
 
-    if (!allowedRoles.includes(role)) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
-    if (role === "user") {
-      const userId = req.user.id
-      if (req.params.id !== userId) {
-        return res
-          .status(403)
-          .json({ message: "Forbidden: You can only access your own profile" });
+      if (!allowedRoles.includes(role)) {
+        return res.status(403).json({ message: "Unauthorized access" });
       }
-    }
 
-    next();
-  };
+      next();
+    };
+  } catch (error) {
+    res.status(401).json({
+      message: "Unauthorized",
+      error: error.message,
+    });
+  }
 };

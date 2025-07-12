@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { userMiddleware } from "../../middleware/auth.middleware.js";
 import {
+  deleteAllUsers,
   deleteUser,
   getAllUser,
   getUser,
@@ -9,9 +10,9 @@ import {
 
 const userRouter = Router();
 
-userRouter.get("/:id", userMiddleware("admin", "user"), getUser);
-userRouter.get("/", userMiddleware("admin"), getAllUser);
-userRouter.patch("/:id", userMiddleware("user"), updateUser);
-userRouter.delete("/:id", userMiddleware("user", "admin"), deleteUser);
-
+userRouter.get("/getAllUsers", userMiddleware("admin"), getAllUser);
+userRouter.get("/", userMiddleware("admin", "user"), getUser);
+userRouter.patch("/editUser", userMiddleware("user"), updateUser);
+userRouter.delete("/deleteUser", userMiddleware("user", "admin"), deleteUser);
+userRouter.delete("/deleteAllUsers", userMiddleware("admin"), deleteAllUsers);
 export default userRouter;

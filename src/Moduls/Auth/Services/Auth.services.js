@@ -32,7 +32,7 @@ export const register = async (req, res) => {
       }
     }
 
-    const user = await new User({
+    const user = new User({
       userName,
       email,
       password,
@@ -56,7 +56,9 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select(
+      "-__v -otp -createdAt -updatedAt"
+    );
 
     if (!user) {
       return res.status(400).json({ message: "User not found" });
@@ -73,17 +75,21 @@ export const login = async (req, res) => {
       process.env.ENCRYPTION_KEY
     ).toString(CryptoJS.enc.Utf8);
 
-    const decryptedEmail = CryptoJS.AES.decrypt(
-      user.email,
-      process.env.ENCRYPTION_KEY
-    ).toString(CryptoJS.enc.Utf8);
-
     user.phone = decryptedPhone;
-    user.email = decryptedEmail;
 
     const token = generateToken(user, res);
 
-    res.status(200).json({ user, token });
+    const { password: pwd, ...userData } = user.toObject();
+    res.status(200).json({ userData, token });
+  } catch (error) {
+    res.status(500).json({ error, message: error.message });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    res.clearCookie("jwt");
+    res.status(200).json({ message: "Logout successful" });
   } catch (error) {
     res.status(500).json({ error, message: error.message });
   }
